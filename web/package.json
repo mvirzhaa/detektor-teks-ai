@@ -1,0 +1,24 @@
+{
+  "name": "detektor-teks-ai-web",
+  "version": "1.0.0",
+  "description": "Web & API gateway Detektor Teks AI (mode belajar & mode pengecekan)",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "csv-parse": "^7.0.3",
+    "express": "^4.22.3",
+    "express-rate-limit": "^8.7.3",
+    "helmet": "^8.3.0",
+    "morgan": "^1.12.1",
+    "multer": "^2.5.0",
+    "pg": "^8.23.1"
+  }
+}

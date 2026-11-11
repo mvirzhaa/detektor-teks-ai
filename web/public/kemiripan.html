@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cek Kemiripan</title>
+  <base href="/">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d2a33'/%3E%3Cpath d='M8 21h7M8 16h11M8 11h16' stroke='%23f0e9dc' stroke-width='2.4' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='21' r='3' fill='%23e0573a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="kemiripan.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <div>
+        <h1>Cek Kemiripan</h1>
+        <p class="sub">Bandingkan dokumen dengan internet &amp; repositori jurnal</p>
+      </div>
+    </div>
+    <div class="top-right">
+      <nav class="modules" aria-label="Modul">
+        <a href="./">Deteksi AI</a>
+        <a href="kemiripan" class="active">Cek Kemiripan</a>
+      </nav>
+      <button class="icon-btn" id="openSettings" title="Token admin" aria-label="Token admin">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" id="simTabs">
+    <button class="tab active" data-tab="checks">Pemeriksaan</button>
+    <button class="tab" data-tab="sources">Sumber Data</button>
+    <button class="tab" data-tab="index">Indeks Dokumen</button>
+  </nav>
+
+  <main id="simMain">
+    <!-- ============ PEMERIKSAAN ============ -->
+    <section class="panel active" id="tab-checks">
+      <div class="grid-submit">
+        <div class="card">
+          <div class="card-head">
+            <h2>Kirim dokumen</h2>
+            <div class="seg" id="submitSeg">
+              <button class="active" data-mode="file">Unggah dokumen</button>
+              <button data-mode="text">Tempel teks</button>
+            </div>
+          </div>
+          <div class="row2">
+            <input id="subTitle" placeholder="Judul (opsional)">
+            <input id="subAuthor" placeholder="Nama penulis / mahasiswa (opsional)">
+          </div>
+          <div class="input-mode" data-for="file">
+            <label class="drop">
+              <input type="file" id="subFile" accept=".pdf,.docx,.txt,.md,.html,.htm">
+              <strong>Pilih atau seret dokumen</strong>
+              <span>PDF, DOCX, TXT, MD, HTML — maks 15 MB</span>
+              <em id="subFileName"></em>
+            </label>
+          </div>
+          <div class="input-mode hidden" data-for="text">
+            <textarea id="subText" placeholder="Tempel teks yang ingin diperiksa (minimal 30 kata)…"></textarea>
+            <div class="meta-row"><span id="subWords">0 kata</span></div>
+          </div>
+          <details class="opts">
+            <summary>Pengaturan pemeriksaan</summary>
+            <div class="opt-grid">
+              <fieldset>
+                <legend>Bandingkan dengan</legend>
+                <label><input type="checkbox" id="optInternet" checked> Sumber internet</label>
+                <label><input type="checkbox" id="optPublication" checked> Publikasi &amp; repositori jurnal</label>
+                <label><input type="checkbox" id="optSubmission" checked> Tugas mahasiswa sebelumnya</label>
+                <label><input type="checkbox" id="optWeb" checked> Cari langsung di web saat memeriksa</label>
+              </fieldset>
+              <fieldset>
+                <legend>Kecualikan</legend>
+                <label><input type="checkbox" id="optBiblio" checked> Daftar pustaka</label>
+                <label><input type="checkbox" id="optQuotes"> Kutipan bertanda petik</label>
+                <label class="inline">Kecocokan &lt; <input type="number" id="optMinWords" value="8" min="4" max="50"> kata</label>
+              </fieldset>
+            </div>
+            <label class="save-repo"><input type="checkbox" id="optSave"> Simpan dokumen ini ke <b>repositori tugas</b> agar menjadi pembanding pemeriksaan berikutnya</label>
+          </details>
+          <button class="btn primary wide" id="runSubmit">Periksa kemiripan</button>
+        </div>
+
+        <div class="card overview" id="overview">
+          <div class="muted">Memuat ringkasan…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Daftar pemeriksaan</h2>
+          <input id="checkSearch" class="search" placeholder="Cari judul, penulis, file…">
+        </div>
+        <div class="table-wrap"><table class="tbl inbox" id="checkTable"></table></div>
+        <div class="pager" id="checkPager"></div>
+      </div>
+    </section>
+
+    <!-- ============ SUMBER DATA ============ -->
+    <section class="panel" id="tab-sources">
+      <div class="grid-submit">
+        <div class="card">
+          <div class="card-head"><h2>Tambah sumber data</h2></div>
+          <form id="sourceForm" class="src-form">
+            <label>Nama sumber<input name="name" required placeholder="mis. Jurnal Teknik Informatika UIKA"></label>
+            <label>Jenis
+              <select name="kind" id="srcKind">
+                <option value="oai_pmh">Repositori jurnal / skripsi (OAI-PMH: OJS, EPrints, DSpace)</option>
+                <option value="sitemap">Situs web dengan sitemap.xml</option>
+                <option value="web_crawl">Telusuri situs dari URL awal</option>
+                <option value="rss">Feed RSS / Atom</option>
+              </select>
+            </label>
+            <label>URL<input name="url" required placeholder="https://journal.contoh.ac.id/index.php/jti/oai" id="srcUrl"></label>
+            <p class="hint" id="srcHint"></p>
+            <div class="row2">
+              <label>Kategori laporan
+                <select name="category"><option value="">Otomatis</option><option value="publication">Publikasi</option><option value="internet">Internet</option><option value="submission">Tugas mahasiswa</option></select>
+              </label>
+              <label>Jadwal crawl
+                <select name="schedule"><option value="nightly">Setiap malam</option><option value="weekly">Mingguan</option><option value="manual">Manual saja</option></select>
+              </label>
+            </div>
+            <details class="opts">
+              <summary>Konfigurasi lanjutan (JSON)</summary>
+              <textarea name="config" id="srcConfig" class="code" spellcheck="false" placeholder='{}'></textarea>
+            </details>
+            <label class="save-repo"><input type="checkbox" name="crawl_now" checked> Langsung crawl setelah disimpan</label>
+            <button class="btn primary wide" type="submit">Simpan sumber</button>
+          </form>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Unggah ke repositori internal</h2></div>
+          <p class="muted small">Untuk arsip jurnal, skripsi, atau modul yang tidak punya OAI-PMH. Dokumen langsung diindeks sebagai <b>Publikasi</b>.</p>
+          <label class="drop small-drop">
+            <input type="file" id="repoFiles" multiple accept=".pdf,.docx,.txt,.md,.html,.htm">
+            <strong>Pilih hingga 30 dokumen</strong>
+            <em id="repoFilesName"></em>
+          </label>
+          <div class="row2">
+            <input id="repoAuthors" placeholder="Penulis (opsional)">
+            <input id="repoYear" placeholder="Tahun terbit (opsional)">
+          </div>
+          <button class="btn wide" id="runRepoUpload">Unggah &amp; indeks</button>
+          <div id="repoResult"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Sumber data</h2><span class="muted small" id="schedInfo"></span></div>
+        <div class="table-wrap"><table class="tbl" id="sourceTable"></table></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Riwayat crawl</h2><button class="btn small ghost" id="refreshRuns">Muat ulang</button></div>
+        <div class="table-wrap"><table class="tbl" id="runTable"></table></div>
+      </div>
+    </section>
+
+    <!-- ============ INDEKS ============ -->
+    <section class="panel" id="tab-index">
+      <div class="card">
+        <div class="card-head"><h2>Dokumen terindeks</h2></div>
+        <div class="filters">
+          <input id="docSearch" placeholder="Cari judul, URL, penulis…">
+          <select id="docSource"><option value="">Semua sumber</option></select>
+        </div>
+        <div class="table-wrap"><table class="tbl" id="docTable"></table></div>
+        <div class="pager" id="docPager"></div>
+      </div>
+    </section>
+
+    <!-- ============ LAPORAN ============ -->
+    <section class="panel" id="tab-report">
+      <div class="report-bar">
+        <button class="btn small ghost" id="backToList">‹ Kembali</button>
+        <div class="rb-title"><b id="rTitle"></b><span id="rMeta" class="muted"></span></div>
+        <div class="rb-actions">
+          <button class="btn small" id="toggleFilters">Filter &amp; pengaturan</button>
+          <button class="btn small" id="printReport">Cetak / PDF</button>
+        </div>
+      </div>
+      <div class="card filters-card hidden" id="filtersCard">
+        <div class="opt-grid">
+          <fieldset>
+            <legend>Bandingkan dengan</legend>
+            <label><input type="checkbox" id="fInternet"> Sumber internet</label>
+            <label><input type="checkbox" id="fPublication"> Publikasi &amp; repositori</label>
+            <label><input type="checkbox" id="fSubmission"> Tugas mahasiswa</label>
+          </fieldset>
+          <fieldset>
+            <legend>Kecualikan</legend>
+            <label><input type="checkbox" id="fBiblio"> Daftar pustaka</label>
+            <label><input type="checkbox" id="fQuotes"> Kutipan bertanda petik</label>
+            <label class="inline">Kecocokan &lt; <input type="number" id="fMinWords" min="4" max="50"> kata</label>
+          </fieldset>
+          <fieldset>
+            <legend>Pencarian web</legend>
+            <label><input type="checkbox" id="fSearchAgain"> Cari ulang di web (memakai kuota API)</label>
+            <p class="hint">Tanpa centang, hasil pencarian sebelumnya dipakai ulang.</p>
+          </fieldset>
+        </div>
+        <button class="btn primary" id="applyFilters">Terapkan &amp; periksa ulang</button>
+      </div>
+      <div id="reportProgress" class="hidden"></div>
+      <div class="report-grid hidden" id="reportGrid">
+        <article class="paper" id="paper"></article>
+        <aside class="match-panel" id="matchPanel"></aside>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="settings">
+    <form method="dialog" class="dlg">
+      <h3>Token admin</h3>
+      <p>Bila server memakai <code>LEARN_TOKEN</code>, token ini dibutuhkan untuk mengelola sumber data, mengunggah ke repositori, menyimpan ke repositori tugas, dan menghapus. Disimpan di browser ini saja.</p>
+      <input id="tokenInput" type="password" placeholder="Masukkan token" autocomplete="off">
+      <div class="dlg-actions"><button value="cancel" class="btn ghost">Batal</button><button value="save" class="btn primary">Simpan</button></div>
+    </form>
+  </dialog>
+  <dialog id="logDialog">
+    <form method="dialog" class="dlg wide-dlg">
+      <h3 id="logTitle">Log crawl</h3>
+      <pre id="logBody" class="log"></pre>
+      <div class="dlg-actions"><button value="close" class="btn">Tutup</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="kemiripan.js"></script>
+</body>
+</html>

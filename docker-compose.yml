@@ -1,0 +1,95 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-detektor}
+      POSTGRES_USER: ${POSTGRES_USER:-detektor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-detektor}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./web/src/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./web/src/db/schema-similarity.sql:/docker-entrypoint-initdb.d/02-schema-similarity.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ml:
+    build: ./ml-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor}@db:5432/${POSTGRES_DB:-detektor}
+      MODEL_DIR: /data/models
+      MIN_SAMPLES_PER_CLASS: ${MIN_SAMPLES_PER_CLASS:-5}
+      AUTO_RETRAIN_EVERY: ${AUTO_RETRAIN_EVERY:-50}
+      REPLAY_PER_CLASS: ${REPLAY_PER_CLASS:-16}
+    volumes:
+      - models:/data/models
+    depends_on:
+      db:
+        condition: service_healthy
+    # Tidak dipublikasikan ke host: hanya web yang boleh mengakses layanan ML
+
+  # Modul Cek Kemiripan: antrean pemeriksaan, crawling malam, pencarian web
+  sim-worker:
+    build: ./ml-service
+    command: ["python", "-m", "app.similarity.worker"]
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor}@db:5432/${POSTGRES_DB:-detektor}
+      SEARCH_PROVIDER: ${SEARCH_PROVIDER:-none}
+      BRAVE_API_KEY: ${BRAVE_API_KEY:-}
+      SERPAPI_KEY: ${SERPAPI_KEY:-}
+      GOOGLE_CSE_KEY: ${GOOGLE_CSE_KEY:-}
+      GOOGLE_CSE_CX: ${GOOGLE_CSE_CX:-}
+      SEARXNG_URL: ${SEARXNG_URL:-http://searxng:8080}
+      SEARCH_LANG: ${SEARCH_LANG:-id}
+      SEARCH_MAX_QUERIES: ${SEARCH_MAX_QUERIES:-10}
+      WEB_MAX_FETCH: ${WEB_MAX_FETCH:-15}
+      WEB_CACHE_DAYS: ${WEB_CACHE_DAYS:-30}
+      CRAWL_TIME: ${CRAWL_TIME:-01:00}
+      CRAWL_TZ: ${CRAWL_TZ:-Asia/Jakarta}
+      CRAWL_WEEKLY_DAY: ${CRAWL_WEEKLY_DAY:-6}
+      CRAWL_MAX_DOCS: ${CRAWL_MAX_DOCS:-500}
+      CRAWL_DELAY_SEC: ${CRAWL_DELAY_SEC:-1}
+      CRAWL_ALLOW_PRIVATE: ${CRAWL_ALLOW_PRIVATE:-false}
+      CRAWL_USER_AGENT: ${CRAWL_USER_AGENT:-DetektorKemiripanBot/1.0 (+crawler repositori kampus)}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Opsional: mesin pencari gratis self-hosted. Aktifkan dengan:
+  #   docker compose --profile searxng up -d   dan   SEARCH_PROVIDER=searxng
+  searxng:
+    image: searxng/searxng:latest
+    profiles: ["searxng"]
+    restart: unless-stopped
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-ganti-dengan-string-acak}
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor}@db:5432/${POSTGRES_DB:-detektor}
+      ML_URL: http://ml:8000
+      LEARN_TOKEN: ${LEARN_TOKEN:-}
+      STORE_CHECK_TEXT: ${STORE_CHECK_TEXT:-true}
+      BULK_RETRAIN_THRESHOLD: ${BULK_RETRAIN_THRESHOLD:-100}
+      BASE_PATH: ${BASE_PATH:-}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      ml:
+        condition: service_started
+
+volumes:
+  pgdata:
+  models:

@@ -1,0 +1,10 @@
+# Konfigurasi minimal SearXNG untuk modul Cek Kemiripan
+use_default_settings: true
+server:
+  limiter: false          # hanya diakses internal oleh sim-worker
+  image_proxy: false
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json                # WAJIB: sim-worker memakai format JSON

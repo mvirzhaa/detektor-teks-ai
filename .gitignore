@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.local
+__pycache__/
+*.pyc
+.pytest_cache/
+ml-service/models/
+.venv/
+venv/
+.vscode/
+.idea/
+*.log

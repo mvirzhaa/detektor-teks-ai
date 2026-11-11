@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detektor Teks AI</title>
+  <base href="/">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d2a33'/%3E%3Cpath d='M8 21h7M8 16h11M8 11h16' stroke='%23f0e9dc' stroke-width='2.4' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='21' r='3' fill='%23e0573a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <div>
+        <h1>Detektor Teks AI</h1>
+        <p class="sub">Belajar membedakan tulisan manusia &amp; mesin</p>
+      </div>
+    </div>
+    <div class="top-right">
+      <nav class="modules" aria-label="Modul">
+        <a href="./" class="active">Deteksi AI</a>
+        <a href="kemiripan">Cek Kemiripan</a>
+      </nav>
+      <button class="model-pill" id="modelPill" data-goto="model" title="Status model">
+        <span class="dot"></span><span id="modelPillText">memuat…</span>
+      </button>
+      <button class="icon-btn" id="openSettings" title="Pengaturan token belajar" aria-label="Pengaturan">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="check" role="tab">Cek Teks</button>
+    <button class="tab" data-tab="learn" role="tab">Mode Belajar</button>
+    <button class="tab" data-tab="dataset" role="tab">Dataset</button>
+    <button class="tab" data-tab="model" role="tab">Model</button>
+    <button class="tab" data-tab="history" role="tab">Riwayat</button>
+  </nav>
+
+  <main>
+    <!-- ================= MODE PENGECEKAN ================= -->
+    <section class="panel active" id="tab-check">
+      <div class="grid-check">
+        <div class="card input-card">
+          <div class="card-head">
+            <h2>Periksa teks atau dokumen</h2>
+            <div class="seg" id="checkInputSeg">
+              <button class="active" data-mode="text">Tempel teks</button>
+              <button data-mode="file">Unggah dokumen</button>
+            </div>
+          </div>
+          <div class="input-mode" data-for="text">
+            <textarea id="checkText" placeholder="Tempel teks di sini… (minimal 15 kata, ideal ≥150 kata)"></textarea>
+            <div class="meta-row"><span id="checkWordCount">0 kata</span><button class="link-btn" id="clearCheck">Kosongkan</button></div>
+          </div>
+          <div class="input-mode hidden" data-for="file">
+            <label class="drop" id="checkDrop">
+              <input type="file" id="checkFile" accept=".pdf,.docx,.txt,.md,.html,.htm">
+              <strong>Pilih atau seret dokumen ke sini</strong>
+              <span>PDF, DOCX, TXT, MD, HTML — maks 15 MB</span>
+              <em id="checkFileName"></em>
+            </label>
+          </div>
+          <button class="btn primary wide" id="runCheck">Periksa</button>
+        </div>
+
+        <div class="card result-card" id="resultCard">
+          <div class="empty-state" id="resultEmpty">
+            <div class="empty-art" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <p>Hasil analisis akan muncul di sini: probabilitas buatan AI, sorotan per bagian teks, dan indikator yang memengaruhi keputusan.</p>
+          </div>
+          <div id="resultBody" class="hidden"></div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="highlightCard">
+        <div class="card-head">
+          <h2>Sorotan per bagian</h2>
+          <div class="legend"><span class="lg human">manusia</span><span class="scale"></span><span class="lg ai">AI</span></div>
+        </div>
+        <div class="highlight" id="highlightText"></div>
+      </div>
+    </section>
+
+    <!-- ================= MODE BELAJAR ================= -->
+    <section class="panel" id="tab-learn">
+      <div class="grid-learn">
+        <div class="card">
+          <div class="card-head">
+            <h2>Ajari model dengan contoh berlabel</h2>
+            <div class="seg" id="learnSeg">
+              <button class="active" data-mode="text">Teks</button>
+              <button data-mode="files">Dokumen</button>
+              <button data-mode="import">Impor CSV/JSONL</button>
+            </div>
+          </div>
+
+          <div class="label-pick" id="labelPick">
+            <span class="lp-title">Teks ini ditulis oleh</span>
+            <button data-label="manusia" class="lp human"><b>Manusia</b><small>ditulis sendiri oleh orang</small></button>
+            <button data-label="ai" class="lp ai"><b>AI</b><small>dihasilkan ChatGPT, Gemini, Claude, dll.</small></button>
+          </div>
+
+          <div class="input-mode" data-for="text">
+            <textarea id="learnText" placeholder="Tempel contoh teks yang labelnya Anda yakini benar…"></textarea>
+            <div class="meta-row"><span id="learnWordCount">0 kata</span>
+              <input id="learnNote" class="note" placeholder="Catatan (opsional): sumber, model AI, dll."></div>
+          </div>
+          <div class="input-mode hidden" data-for="files">
+            <label class="drop">
+              <input type="file" id="learnFiles" multiple accept=".pdf,.docx,.txt,.md,.html,.htm">
+              <strong>Pilih hingga 20 dokumen berlabel sama</strong>
+              <span>PDF, DOCX, TXT, MD, HTML</span>
+              <em id="learnFilesName"></em>
+            </label>
+          </div>
+          <div class="input-mode hidden" data-for="import">
+            <label class="drop">
+              <input type="file" id="importFile" accept=".csv,.tsv,.jsonl,.ndjson,.json">
+              <strong>Pilih file dataset</strong>
+              <span>Kolom <code>text</code> dan <code>label</code> (ai/manusia, 1/0). Label diambil dari file.</span>
+              <em id="importFileName"></em>
+            </label>
+            <div class="row2">
+              <input id="importTextCol" placeholder="nama kolom teks (opsional)">
+              <input id="importLabelCol" placeholder="nama kolom label (opsional)">
+            </div>
+          </div>
+
+          <button class="btn primary wide" id="runLearn">Pelajari contoh ini</button>
+          <div id="learnResult"></div>
+        </div>
+
+        <aside class="card explain">
+          <h3>Cara model belajar</h3>
+          <ol>
+            <li><b>Belajar langsung.</b> Setiap contoh baru langsung dipelajari (<i>incremental learning</i>) bersama beberapa contoh lama agar model tidak "lupa".</li>
+            <li><b>Tebak dulu, baru belajar.</b> Sebelum belajar, model menebak label contoh itu. Akurasi tebakan inilah <i>akurasi online</i> di tab Model.</li>
+            <li><b>Latih ulang penuh.</b> Setiap sejumlah contoh baru, model dilatih ulang dari seluruh dataset, diuji pada 20% data yang disisihkan, lalu disimpan sebagai versi baru.</li>
+            <li><b>Umpan balik.</b> Di Mode Cek, koreksi hasil yang salah. Koreksi itu ikut menjadi data latih.</li>
+          </ol>
+          <p class="tip">Kualitas model sangat bergantung pada data. Gunakan contoh yang seimbang (jumlah manusia ≈ AI), dari topik dan gaya yang beragam, dan label yang benar-benar Anda yakini.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ================= DATASET ================= -->
+    <section class="panel" id="tab-dataset">
+      <div class="card">
+        <div class="card-head">
+          <h2>Dataset latih</h2>
+          <a class="btn ghost" href="api/samples/export.csv">Unduh CSV</a>
+        </div>
+        <div class="stat-row" id="datasetStats"></div>
+        <div class="filters">
+          <input id="dsSearch" placeholder="Cari teks atau nama file…">
+          <select id="dsLabel"><option value="">Semua label</option><option value="0">Manusia</option><option value="1">AI</option></select>
+          <select id="dsSource"><option value="">Semua sumber</option><option value="manual">Manual</option><option value="file">Dokumen</option><option value="import">Impor</option><option value="feedback">Umpan balik</option><option value="cli">CLI</option></select>
+        </div>
+        <div class="table-wrap"><table class="tbl" id="dsTable"></table></div>
+        <div class="pager" id="dsPager"></div>
+      </div>
+    </section>
+
+    <!-- ================= MODEL ================= -->
+    <section class="panel" id="tab-model">
+      <div class="model-grid" id="modelCards"></div>
+      <div class="card">
+        <div class="card-head">
+          <h2>Riwayat versi model</h2>
+          <button class="btn primary" id="runRetrain">Latih ulang penuh</button>
+        </div>
+        <div id="trainStatus"></div>
+        <div class="table-wrap"><table class="tbl" id="versionTable"></table></div>
+      </div>
+    </section>
+
+    <!-- ================= RIWAYAT ================= -->
+    <section class="panel" id="tab-history">
+      <div class="card">
+        <div class="card-head"><h2>Riwayat pengecekan</h2></div>
+        <div id="historyList" class="history"></div>
+        <div class="pager" id="histPager"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="settings">
+    <form method="dialog" class="dlg">
+      <h3>Token belajar</h3>
+      <p>Jika server diatur dengan <code>LEARN_TOKEN</code>, aksi yang mengubah dataset atau model (belajar, umpan balik, hapus, latih ulang) memerlukan token ini. Token disimpan di browser ini saja.</p>
+      <input id="tokenInput" type="password" placeholder="Masukkan token" autocomplete="off">
+      <div class="dlg-actions"><button value="cancel" class="btn ghost">Batal</button><button value="save" id="saveToken" class="btn primary">Simpan</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
