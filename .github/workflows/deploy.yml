@@ -31,3 +31,4 @@ jobs:
               echo "Directory $DEPLOY_DIR not found. Please ensure initial clone is complete."
               exit 1
             fi
+

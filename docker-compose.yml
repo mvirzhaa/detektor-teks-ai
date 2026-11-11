@@ -39,7 +39,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor}@db:5432/${POSTGRES_DB:-detektor}
-      SEARCH_PROVIDER: ${SEARCH_PROVIDER:-none}
+      SEARCH_PROVIDER: ${SEARCH_PROVIDER:-searxng}
       BRAVE_API_KEY: ${BRAVE_API_KEY:-}
       SERPAPI_KEY: ${SERPAPI_KEY:-}
       GOOGLE_CSE_KEY: ${GOOGLE_CSE_KEY:-}
@@ -60,14 +60,12 @@ services:
       db:
         condition: service_healthy
 
-  # Opsional: mesin pencari gratis self-hosted. Aktifkan dengan:
-  #   docker compose --profile searxng up -d   dan   SEARCH_PROVIDER=searxng
+  # Mesin pencari gratis self-hosted (tanpa kuota, internal Docker network)
   searxng:
     image: searxng/searxng:latest
-    profiles: ["searxng"]
     restart: unless-stopped
     environment:
-      SEARXNG_SECRET: ${SEARXNG_SECRET:-ganti-dengan-string-acak}
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-uika-searxng-secret-987654321}
     volumes:
       - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
 
