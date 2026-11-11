@@ -1,0 +1,33 @@
+name: Deploy to Server Utility UIKA
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            DEPLOY_DIR="/var/www/detektor-teks-ai"
+            if [ -d "$DEPLOY_DIR" ]; then
+              cd "$DEPLOY_DIR"
+              echo "Pulling latest changes..."
+              git pull origin main
+              echo "Rebuilding and restarting docker containers..."
+              docker compose up -d --build
+              echo "Cleaning up dangling images..."
+              docker image prune -f
+              echo "Deployment finished successfully!"
+            else
+              echo "Directory $DEPLOY_DIR not found. Please ensure initial clone is complete."
+              exit 1
+            fi
